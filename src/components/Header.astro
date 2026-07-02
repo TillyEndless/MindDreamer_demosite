@@ -20,7 +20,7 @@ type Link = {
 };
 
 interface Props {
-  title: string;
+  title: string | string[];
   authors: Author[];
   conference?: string;
   notes?: Note[];
@@ -55,7 +55,9 @@ const hasBackground = Astro.slots.has("background");
         : "gap-6",
     ]}
   >
-    <h1 class="my-0 text-3xl leading-tight font-medium md:text-5xl">{title}</h1>
+    <h1 class="my-0 text-3xl leading-tight font-medium md:text-5xl">
+      {Array.isArray(title) ? title.map((line) => <span class="block">{line}</span>) : title}
+    </h1>
     <div class="grid w-full grid-cols-1 justify-items-center gap-x-4 gap-y-3 sm:grid-cols-2 md:grid-cols-12 md:gap-y-4">
       {
         authors.map((author, index) => (
