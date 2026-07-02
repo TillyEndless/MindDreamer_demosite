@@ -99,23 +99,23 @@ The question behind Mind Dreamer is therefore deliberately practical: **can a le
 
 ## How It Works
 
-Mind Dreamer turns the world model from a passive replay machine into an active curriculum generator. It does not ask the model to invent arbitrary futures. Instead, it searches for short, plausible latent jumps that expand where the policy can practice.
+Standard Dreamer improves the policy by imagining rollouts from replay states. Mind Dreamer keeps this idea, but adds one extra source of starting points: generated latent anchors near regions that look reachable, uncertain, or potentially rewarding.
 
 <div className="not-prose mx-auto my-8 grid max-w-[58rem] grid-cols-1 gap-4 md:grid-cols-3">
   <div className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm">
     <div className="text-sm font-semibold uppercase text-zinc-500">Step 1</div>
-    <div className="mt-2 text-xl font-semibold text-zinc-950">Propose anchors</div>
-    <p className="mt-2 text-sm leading-6 text-zinc-600">Generate latent states near unexplored but plausible regions of the learned manifold.</p>
+    <div className="mt-2 text-xl font-semibold text-zinc-950">Find useful starts</div>
+    <p className="mt-2 text-sm leading-6 text-zinc-600">Look for latent states near the edge of what the agent has already explored.</p>
   </div>
   <div className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm">
     <div className="text-sm font-semibold uppercase text-zinc-500">Step 2</div>
-    <div className="mt-2 text-xl font-semibold text-zinc-950">Score usefulness</div>
-    <p className="mt-2 text-sm leading-6 text-zinc-600">Prefer anchors that are likely to reveal reward, reduce uncertainty, or connect separated regions.</p>
+    <div className="mt-2 text-xl font-semibold text-zinc-950">Reject bad jumps</div>
+    <p className="mt-2 text-sm leading-6 text-zinc-600">Keep anchors that are plausible under the learned dynamics, and avoid unrealistic shortcuts.</p>
   </div>
   <div className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm">
     <div className="text-sm font-semibold uppercase text-zinc-500">Step 3</div>
-    <div className="mt-2 text-xl font-semibold text-zinc-950">Practice there</div>
-    <p className="mt-2 text-sm leading-6 text-zinc-600">Start imagined rollouts from selected anchors, letting the policy rehearse useful behavior earlier.</p>
+    <div className="mt-2 text-xl font-semibold text-zinc-950">Imagine from there</div>
+    <p className="mt-2 text-sm leading-6 text-zinc-600">Start short imagined rollouts from selected anchors, so the policy can learn around bottlenecks earlier.</p>
   </div>
 </div>
 
@@ -126,7 +126,7 @@ Mind Dreamer turns the world model from a passive replay machine into an active 
   </Figure>
 </div>
 
-Relay guidance is the safety valve. It encourages anchors that are valuable and informative, while manifold constraints discourage jumps that look useful only because the model is leaving the environment's learned structure.
+In short, Mind Dreamer changes where imagination begins. This gives the policy more chances to learn about hard-to-reach regions, while still using the world model to keep generated starts grounded.
 
 ## Toy Case Study
 
