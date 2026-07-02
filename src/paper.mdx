@@ -59,11 +59,11 @@ import convergence from "./assets/mind-dreamer/convergence_comparison.png";
 
 ## Abstract
 
-Model-based reinforcement learning agents learn a world model and improve their behavior by imagining future trajectories. But in most agents, imagination still begins from states in the replay buffer. This makes learning efficient once useful experience exists, yet slow when rewards are hidden behind rare bottlenecks.
+Model-based reinforcement learning agents learn a world model and improve their behavior by imagining future trajectories. But most agents still start imagination from historical replay states. This creates a learning asymmetry: the world model can quickly recover the latent structure of the environment, while the policy remains tied to slow sparse-reward exploration.
 
-**Mind Dreamer** untethers imagination from replay. It generates plausible latent anchors near promising frontiers, then starts imagined rollouts from those anchors so the policy can practice around bottlenecks before random exploration reaches them.
+**Mind Dreamer** breaks this historical tether. It uses a cognitive intervention agent to search the learned latent manifold for states that are worth learning from, while manifold constraints keep generated states physically plausible.
 
-Across DeepMind Control tasks, this simple shift makes learning faster on average and especially helpful in sparse-reward settings, where standard imagination remains trapped near familiar trajectories.
+The selected states become new anchors for imagined rollouts, letting the agent jump toward globally informative regions instead of waiting for random exploration to arrive there.
 
 </HighlightedSection>
 
@@ -84,9 +84,11 @@ Across DeepMind Control tasks, this simple shift makes learning faster on averag
 
 ## Motivation
 
-World models are attractive because they let agents learn from imagined experience instead of expensive environment interaction. However, standard imagination is still historically tethered: rollouts usually start from states the agent has already visited.
+World models are attractive because they let agents learn from imagined experience instead of expensive environment interaction. However, standard imagination is historically tethered: rollouts usually start from states the agent has already visited.
 
-This creates a mismatch. The world model can learn useful local structure from dense prediction losses, while the policy may still wait for sparse rewards to arrive through slow trajectory-bound exploration. In tasks with narrow gateways or delayed reward, the agent repeatedly improves what it already knows instead of practicing near the missing transition.
+This tether creates a learning asymmetry. The world model learns dense geometric structure from prediction losses, so it may already understand how different regions of the latent manifold connect. The policy, in contrast, only receives sparse reward signals and remains trapped in trajectory-bound exploration.
+
+In bottleneck tasks, this means the agent repeatedly practices near familiar states while the most valuable regions for learning remain just outside the replay buffer.
 
 <div className="mx-auto max-w-[30rem]">
   <Figure>
@@ -95,38 +97,38 @@ This creates a mismatch. The world model can learn useful local structure from d
   </Figure>
 </div>
 
-The question behind Mind Dreamer is therefore deliberately practical: **can a learned world model suggest useful places to start imagination, without letting the agent exploit unrealistic hallucinations?**
+Mind Dreamer starts from a practical question: **can we use the world model's faster geometric learning to guide the policy toward globally valuable learning regions, without leaving the manifold of plausible states?**
 
 ## How It Works
 
-Standard Dreamer improves the policy by imagining rollouts from replay states. Mind Dreamer keeps this idea, but adds one extra source of starting points: generated latent anchors near regions that look reachable, uncertain, or potentially rewarding.
+Mind Dreamer keeps Dreamer's imagined rollouts, but changes how some rollout starts are chosen. A cognitive intervention agent proposes candidate latent states, evaluates how useful they are, and keeps only states that remain consistent with the learned manifold.
 
 <div className="not-prose mx-auto my-8 grid max-w-[58rem] grid-cols-1 gap-4 md:grid-cols-3">
   <div className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm">
     <div className="text-sm font-semibold uppercase text-zinc-500">Step 1</div>
-    <div className="mt-2 text-xl font-semibold text-zinc-950">Find useful starts</div>
-    <p className="mt-2 text-sm leading-6 text-zinc-600">Look for latent states near the edge of what the agent has already explored.</p>
+    <div className="mt-2 text-xl font-semibold text-zinc-950">Propose candidates</div>
+    <p className="mt-2 text-sm leading-6 text-zinc-600">A generator searches beyond replay for latent states that may expose new rewards or uncertainty.</p>
   </div>
   <div className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm">
     <div className="text-sm font-semibold uppercase text-zinc-500">Step 2</div>
-    <div className="mt-2 text-xl font-semibold text-zinc-950">Reject bad jumps</div>
-    <p className="mt-2 text-sm leading-6 text-zinc-600">Keep anchors that are plausible under the learned dynamics, and avoid unrealistic shortcuts.</p>
+    <div className="mt-2 text-xl font-semibold text-zinc-950">Score their value</div>
+    <p className="mt-2 text-sm leading-6 text-zinc-600">Relay Expected Free Energy balances task value, information gain, and physical plausibility.</p>
   </div>
   <div className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm">
     <div className="text-sm font-semibold uppercase text-zinc-500">Step 3</div>
-    <div className="mt-2 text-xl font-semibold text-zinc-950">Imagine from there</div>
-    <p className="mt-2 text-sm leading-6 text-zinc-600">Start short imagined rollouts from selected anchors, so the policy can learn around bottlenecks earlier.</p>
+    <div className="mt-2 text-xl font-semibold text-zinc-950">Jump and learn</div>
+    <p className="mt-2 text-sm leading-6 text-zinc-600">Contrastive training selects high-value anchors, then imagination starts from those regions.</p>
   </div>
 </div>
 
 <div className="mx-auto max-w-[35rem]">
   <Figure>
     <Picture slot="figure" src={pipeline} alt="The Mind Dreamer framework with adversarial synthesis and relay guidance." />
-    <Fragment slot="caption">The generator creates candidate anchors at manifold frontiers. A relay-guided scorer keeps anchors useful, informative, and consistent with the learned world model.</Fragment>
+    <Fragment slot="caption">The cognitive intervention agent generates candidate anchors, scores them with relay guidance, and uses manifold constraints to avoid physically implausible jumps.</Fragment>
   </Figure>
 </div>
 
-In short, Mind Dreamer changes where imagination begins. This gives the policy more chances to learn about hard-to-reach regions, while still using the world model to keep generated starts grounded.
+In short, Mind Dreamer asks the world model not only to predict futures, but also to identify where learning should start. The agent can then jump to globally worthwhile state regions and train there, rather than waiting for local exploration to discover them.
 
 ## Toy Case Study
 
@@ -191,11 +193,11 @@ Using the same benchmark family as prior Dreamer work, Mind Dreamer improves sam
 
 ## Conclusions
 
-Mind Dreamer shows that a world model can be more than a simulator of futures from the replay buffer. It can also propose where imagination should begin.
+Mind Dreamer shows that the bottleneck in model-based RL is not only how accurately the world model predicts, but also where imagination is allowed to begin.
 
-The central takeaway is that **better starting points for imagination can improve exploration**. Generated anchors act like a curriculum, focusing rollouts on regions that are useful, uncertain, and close enough to the learned manifold to remain trustworthy.
+By introducing a cognitive intervention agent, Mind Dreamer turns the learning asymmetry into an advantage: the world model's fast geometric learning is used to locate state regions with high expected learning value. Relay Expected Free Energy scores these regions, manifold constraints keep them grounded, and contrastive training helps select anchors that are more valuable than historical replay states.
 
-The approach is most helpful when discovery is hard: sparse rewards, narrow transitions, and disconnected regions where replay-tethered imagination keeps practicing what the agent already knows. The technical details, derivations, and full ablations are available in the paper and archive links above.
+The result is a targeted form of exploration: instead of diffusing slowly through history, the agent can jump toward globally worthwhile regions and learn from them. The technical details, derivations, and full ablations are available in the paper and archive links above.
 
 ## BibTeX
 
