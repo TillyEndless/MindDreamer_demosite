@@ -16,7 +16,6 @@ import fig1 from "./assets/mind-dreamer/fig1-5.png";
 import pipeline from "./assets/mind-dreamer/pipeline.png";
 import toyEnv from "./assets/mind-dreamer/toy-env.png";
 import dmcResults from "./assets/mind-dreamer/dmc-both-2.png";
-import ablation from "./assets/mind-dreamer/com_abl.png";
 import benchmarkGrid from "./assets/mind-dreamer/comparison_aligned_max_min_binned_1m_600_24k.png";
 import convergence from "./assets/mind-dreamer/convergence_comparison.png";
 
@@ -138,17 +137,16 @@ In short, Mind Dreamer asks the world model not only to predict futures, but als
 <div className="mx-auto max-w-[45rem]">
   <Figure>
     <Picture slot="figure" src={dmcResults} alt="DeepMind Control performance curves and ablations for Mind Dreamer." />
-    <Fragment slot="caption">Compact DeepMind Control summary. The top row reports sample-efficiency curves; the bottom row is the matching component ablation, so it is not repeated again below.</Fragment>
+    <Fragment slot="caption"><strong>DeepMind Control evaluation.</strong> Top: Mind Dreamer improves sample efficiency against DreamerV3, DreamerV2, and Plan2Explore, with clear gains on bottleneck tasks such as Hopper Hop and Pendulum Swingup. Bottom: component ablations remove pragmatic relay guidance, epistemic relay guidance, or the manifold loss; the resulting drops show that active causal intervention needs both useful-state scoring and plausibility constraints.</Fragment>
   </Figure>
 </div>
 
-Using the same benchmark family as prior Dreamer work, Mind Dreamer improves sample efficiency across DeepMind Control tasks. It reaches 90% of peak performance in **334.7k steps**, compared with **557.6k steps** for DreamerV3. The largest gains appear in bottleneck-heavy tasks such as Pendulum Swingup, Hopper Hop, and Quadruped Run.
+Using the same benchmark family as prior Dreamer work, Mind Dreamer reaches 90% of peak performance in **334.7k steps**, compared with **557.6k steps** for DreamerV3. The ablations in the same figure show why: removing either relay objective or the manifold constraint weakens the generated curriculum, especially on tasks where progress depends on discovering sparse bottlenecks.
 
 <Tabs defaultValue="full">
   <TabsList>
     <TabsTrigger value="full">Task scores</TabsTrigger>
     <TabsTrigger value="toy">Toy example</TabsTrigger>
-    <TabsTrigger value="ablation">Ablation</TabsTrigger>
     <TabsTrigger value="convergence">Convergence</TabsTrigger>
   </TabsList>
   <TabsContent value="full">
@@ -164,14 +162,6 @@ Using the same benchmark family as prior Dreamer work, Mind Dreamer improves sam
       <Figure>
         <Picture slot="figure" src={toyEnv} alt="A synthetic three-ring manifold used to demonstrate bottleneck discovery." />
         <Fragment slot="caption"><strong>Sampling dynamics on the synthetic three-ring manifold.</strong> Black points show DreamerV3 imagination starts, which remain coupled to historical occupancy and struggle to escape the ring attractor. Yellow crosses show Mind Dreamer counterfactual states, which rapidly aggregate near topological junctions between rings, helping bridge manifold bottlenecks and reach the first critical transition 4.2x faster.</Fragment>
-      </Figure>
-    </div>
-  </TabsContent>
-  <TabsContent value="ablation">
-    <div className="mx-auto max-w-[38rem]">
-      <Figure>
-        <Picture slot="figure" src={ablation} alt="Ablation study of Mind Dreamer components." />
-        <Fragment slot="caption">Focused ablation on representative tasks. Removing pragmatic or epistemic relay guidance weakens the generated curriculum.</Fragment>
       </Figure>
     </div>
   </TabsContent>
