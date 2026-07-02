@@ -1,0 +1,26 @@
+<div class="not-prose mx-auto my-6 max-w-[42rem] overflow-x-auto">
+  <table class="w-full table-fixed border-collapse text-base">
+    <slot />
+  </table>
+</div>
+
+<style>
+  table :global(th),
+  table :global(td) {
+    border-bottom: 1px solid rgb(228 228 231);
+    padding: 0.85rem 0.75rem;
+    text-align: left;
+    vertical-align: top;
+    overflow-wrap: anywhere;
+  }
+
+  table :global(th) {
+    color: rgb(24 24 27);
+    font-weight: 700;
+  }
+
+  table :global(th:first-child),
+  table :global(td:first-child) {
+    width: 26%;
+  }
+</style>

@@ -1,0 +1,115 @@
+---
+import Table from "../components/Table.astro";
+
+import "../styles/global.css";
+import "katex/dist/katex-swap.css";
+
+import { Content, frontmatter } from "../paper.mdx";
+
+interface Frontmatter {
+  title: string;
+  description?: string;
+  favicon: string;
+  thumbnail?: string;
+  theme?: "device" | "light" | "dark";
+}
+
+const {
+  title,
+  description,
+  favicon,
+  thumbnail,
+  theme = "device",
+} = frontmatter as Frontmatter;
+
+const baseUrl = import.meta.env.BASE_URL;
+const prefix = baseUrl.endsWith("/") ? baseUrl : baseUrl + "/";
+---
+
+<!doctype html>
+<html class="bg-white dark:bg-zinc-900" lang="en" data-theme={theme}>
+  <head>
+    <meta charset="UTF-8" />
+    {description && <meta name="description" content={description} />}
+    <meta name="viewport" content="width=device-width" />
+    <meta name="generator" content={Astro.generator} />
+
+    <link rel="icon" type="image/svg+xml" href={prefix + favicon} />
+
+    <meta property="og:title" content={title} />
+    {description && <meta property="og:description" content={description} />}
+    <meta property="og:type" content="website" />
+    {thumbnail && <meta property="og:image" content={prefix + thumbnail} />}
+
+    <title>{title}</title>
+  </head>
+  <body
+    class="prose prose-lg prose-zinc dark:prose-invert prose-a:text-blue-600 prose-a:hover:text-blue-900 prose-a:dark:text-blue-200 prose-a:dark:hover:text-blue-100 prose-a:underline prose-a:decoration-dashed prose-a:underline-offset-4 prose-a:hover:decoration-solid prose-a:font-normal prose-code:bg-zinc-200 prose-code:dark:bg-zinc-800 prose-code:text-zinc-800 prose-code:dark:text-zinc-200 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:font-medium prose-code:before:content-none prose-code:after:content-none max-w-none pt-16 pb-6 font-sans"
+  >
+    <main>
+      <Content components={{ table: Table }} />
+    </main>
+    <div
+      id="image-zoom-overlay"
+      class="fixed inset-0 z-50 hidden cursor-zoom-out items-center justify-center bg-black/85 p-4 backdrop-blur-sm"
+      aria-hidden="true"
+    >
+      <img
+        id="image-zoom-target"
+        class="max-h-[92svh] max-w-[94vw] rounded-lg bg-white object-contain shadow-2xl"
+        alt=""
+      />
+    </div>
+    <footer class="mx-auto max-w-[50rem] px-6 text-center">
+      <p class="prose-sm text-center">
+        Built with <a
+          href="https://research-template.roman.technology"
+          rel="nofollow">Roman Hauksson-Neill's project page template</a
+        >
+      </p>
+    </footer>
+    <script>
+      const overlay = document.getElementById("image-zoom-overlay");
+      const target = document.getElementById(
+        "image-zoom-target",
+      ) as HTMLImageElement | null;
+
+      function closeZoom() {
+        if (!overlay || !target) return;
+        overlay.classList.add("hidden");
+        overlay.classList.remove("flex");
+        overlay.setAttribute("aria-hidden", "true");
+        target.removeAttribute("src");
+        target.alt = "";
+        document.documentElement.classList.remove("overflow-hidden");
+      }
+
+      document.addEventListener("click", (event) => {
+        const clicked = event.target as HTMLElement | null;
+        if (!clicked || !overlay || !target) return;
+
+        const image = clicked.closest(
+          "img[data-zoomable='true']",
+        ) as HTMLImageElement | null;
+
+        if (image) {
+          target.src = image.currentSrc || image.src;
+          target.alt = image.alt || "";
+          overlay.classList.remove("hidden");
+          overlay.classList.add("flex");
+          overlay.setAttribute("aria-hidden", "false");
+          document.documentElement.classList.add("overflow-hidden");
+          return;
+        }
+
+        if (clicked === overlay) {
+          closeZoom();
+        }
+      });
+
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") closeZoom();
+      });
+    </script>
+  </body>
+</html>

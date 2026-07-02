@@ -1,0 +1,211 @@
+---
+title: Mind Dreamer
+theme: light
+favicon: favicon.svg
+description: "Mind Dreamer untethers model-based reinforcement learning from historical trajectories through active causal intervention on latent manifolds."
+thumbnail: assets/mind-dreamer-thumbnail.png
+---
+
+import Header from "./components/Header.astro";
+import HighlightedSection from "./components/HighlightedSection.astro";
+import Figure from "./components/Figure.astro";
+import Picture from "./components/Picture.astro";
+import TwoColumns from "./components/TwoColumns.astro";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/starwind/tabs";
+
+import fig1 from "./assets/mind-dreamer/fig1-5.png";
+import pipeline from "./assets/mind-dreamer/pipeline.png";
+import toyEnv from "./assets/mind-dreamer/toy-env.png";
+import dmcResults from "./assets/mind-dreamer/dmc-both-2.png";
+import ablation from "./assets/mind-dreamer/com_abl.png";
+import benchmarkGrid from "./assets/mind-dreamer/comparison_aligned_max_min_binned_1m_600_24k.png";
+import convergence from "./assets/mind-dreamer/convergence_comparison.png";
+
+<Header
+  title="Mind Dreamer: Untethering Imagination via Active Causal Intervention on Latent Manifolds"
+  conference="Proceedings of ICML 2026, Seoul, South Korea"
+  authors={[
+    { name: "Shaojun Xu", institution: "Tsinghua University" },
+    { name: "Xiaoling Zhou", institution: "Zhejiang University" },
+    { name: "Yihan Lin", institution: "Xiamen University" },
+    { name: "Yapeng Meng", institution: "Tsinghua / Primevision" },
+    { name: "Xinglong Ji", institution: "Tsinghua University" },
+    { name: "Luping Shi", institution: "Tsinghua University" },
+    { name: "Rong Zhao", institution: "Tsinghua University" },
+  ]}
+  notes={[
+    { symbol: "✉", text: " Correspondence: r_zhao@tsinghua.edu.cn" },
+  ]}
+  links={[
+    { name: "Paper", url: "assets/mind-dreamer-paper.pdf", icon: "ri:file-pdf-2-line" },
+    { name: "Code", url: "https://github.com/TillyEndless/MindDreamer_demosite", icon: "ri:github-line" },
+    { name: "Archive", url: "https://arxiv.org/abs/2605.16030", icon: "academicons:arxiv" },
+  ]}
+>
+</Header>
+
+<HighlightedSection>
+
+## Abstract
+
+Model-Based Reinforcement Learning gains sample efficiency through latent imagination, but standard agents remain constrained by **Historical Tethering**: imagination is initialized from observed replay states. This creates a learning asymmetry where the world model discovers the latent manifold faster than the policy can exploit sparse rewards.
+
+**Mind Dreamer (MD)** introduces **Active Causal Intervention**. Instead of always starting imagination from historical data, MD samples generated initial states $s_0 \sim p_{gen}(\cdot)$ to create non-continuous **latent jumps** toward plausible but epistemically challenging regions. Relay Value and Relay Uncertainty functions then propagate pragmatic and epistemic value across these spatial ruptures. Empirically, MD achieves a **1.67x average speedup** over DreamerV3 on DeepMind Control Suite, reaching **8.8x** in sparse-reward tasks.
+
+</HighlightedSection>
+
+<div className="not-prose mx-auto my-10 grid max-w-[68rem] grid-cols-1 gap-4 px-0 sm:grid-cols-3">
+  <div className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm">
+    <div className="text-3xl font-semibold text-zinc-950">1.67x</div>
+    <div className="mt-2 text-sm text-zinc-600">average speedup to 90% peak performance over DreamerV3</div>
+  </div>
+  <div className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm">
+    <div className="text-3xl font-semibold text-zinc-950">8.8x</div>
+    <div className="mt-2 text-sm text-zinc-600">acceleration in challenging sparse-reward bottleneck tasks</div>
+  </div>
+  <div className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm">
+    <div className="text-3xl font-semibold text-zinc-950">43.5x</div>
+    <div className="mt-2 text-sm text-zinc-600">reduction in jump consistency error with manifold constraints</div>
+  </div>
+</div>
+
+## The Problem: Historical Tethering
+
+Latent imagination gives model-based agents a powerful internal simulator, but the simulator is usually tethered to the replay buffer. Rollouts begin from states the policy has already visited, so even a capable world model must still wait for slow trajectory-bound exploration to discover reward bottlenecks.
+
+The bottleneck is not that the world model lacks structure, but that standard imagination remains tied to where the agent has already been:
+
+<div className="mx-auto max-w-[42rem]">
+
+| Mechanism | Standard MBRL behavior | Consequence |
+| :--- | :--- | :--- |
+| World model | Learns local transition geometry from dense self-supervision | The latent manifold can become useful before rewards are discovered |
+| Policy learning | Optimizes sparse rewards through trajectory-bound data | Value propagation remains slow around bottlenecks |
+| Imagination starts | Rollouts are initialized from replay states $s_0 \sim \mathcal{D}$ | Discovery stays historically tethered to visited regions |
+
+</div>
+
+<div className="mx-auto max-w-[30rem]">
+  <Figure>
+    <Picture slot="figure" src={fig1} alt="Mind Dreamer untethers imagination from historical observations using generated latent anchors." />
+    <Fragment slot="caption">Unlike standard MBRL, which initializes imagination from replay states, Mind Dreamer uses generated interventional anchors to bridge out-of-distribution regions on the learned manifold.</Fragment>
+  </Figure>
+</div>
+
+## Mind Dreamer
+
+MD turns the world model from a passive replay machine into an active curriculum generator. The generator proposes synthesized latent anchors; Relay Guidance evaluates whether those anchors are useful, informative, and still physically plausible under the learned manifold.
+
+<div className="mx-auto max-w-[35rem]">
+  <Figure>
+    <Picture slot="figure" src={pipeline} alt="The Mind Dreamer framework with adversarial synthesis and relay guidance." />
+    <Fragment slot="caption">The generator creates candidate anchors at manifold frontiers. Relay Value Function (RVF) and Relay Uncertainty Function (RUF) assign potential across spatial ruptures, while manifold constraints keep jumps coherent.</Fragment>
+  </Figure>
+</div>
+
+### Relay Expected Free Energy
+
+The generator is trained to balance exploration, exploitation, and safety:
+
+$$
+\max_\theta \mathbb{E}\Big[\eta V_{RVF}(s,s') + \beta V_{RUF}(s,s') - \lambda\mathcal{L}_{mf}(s')\Big].
+$$
+
+The **Relay Value Function** treats a generated anchor as an interventional intermediary state:
+
+$$
+V_{RVF}(s,s') = \max_{\pi}\mathbb{E}\left[\sum_{t=0}^{k-1}\gamma^t r_t + \gamma^k V_\phi(s')\right].
+$$
+
+The **Relay Uncertainty Function** propagates information gain with a quadratic discount:
+
+$$
+V_{RUF}(s,s') = \mathbb{E}\left[\sum_{t=0}^{k-1}\gamma^{2t}\mathcal{I}_{t+1} + \gamma^{2k}U_{\phi_u}(s')\right].
+$$
+
+The $\gamma^2$ term is not just a tuned coefficient. It follows from variance propagation of informational shocks and gives the generator a finite epistemic horizon, discouraging distal hallucinations.
+
+## A Toy Manifold Case Study
+
+<TwoColumns>
+  <div slot="left" className="mx-auto max-w-[28rem]">
+    <Figure>
+      <Picture slot="figure" src={toyEnv} alt="A synthetic three-ring manifold used to demonstrate bottleneck discovery." />
+      <Fragment slot="caption">Three-ring manifold. Transitioning across rings requires discovering narrow gateways that are unlikely under random walks.</Fragment>
+    </Figure>
+  </div>
+  <div slot="right">
+
+In the synthetic three-ring environment, DreamerV3 remains trapped near the first ring because imagined rollouts begin from previously observed states. MD uses generated anchors to probe candidate gateways and turns global discovery into local refinement.
+
+**Observed effect:** Mind Dreamer reaches the first critical transition **4.2x faster** by targeting high-uncertainty ring boundaries.
+
+  </div>
+</TwoColumns>
+
+## Experiments
+
+<div className="mx-auto max-w-[45rem]">
+  <Figure>
+    <Picture slot="figure" src={dmcResults} alt="DeepMind Control performance curves and ablations for Mind Dreamer." />
+    <Fragment slot="caption">Compact DeepMind Control summary. The top row reports sample-efficiency curves; the bottom row is the matching component ablation, so it is not repeated again below.</Fragment>
+  </Figure>
+</div>
+
+Across DeepMind Control tasks, MD reaches 90% of peak performance in **334.7k steps**, compared with **557.6k steps** for DreamerV3. Average return improves from **780.3** to **831.1**, with larger gains in bottleneck-heavy tasks such as Pendulum Swingup, Hopper Hop, and Quadruped Run.
+
+<Tabs defaultValue="full">
+  <TabsList>
+    <TabsTrigger value="full">Full results</TabsTrigger>
+    <TabsTrigger value="ablation">Ablation</TabsTrigger>
+    <TabsTrigger value="convergence">Convergence</TabsTrigger>
+  </TabsList>
+  <TabsContent value="full">
+    <div className="mx-auto max-w-[46rem]">
+      <Figure>
+        <Picture slot="figure" src={benchmarkGrid} alt="Full comparative evaluation across 20 DeepMind Control benchmarks." />
+        <Fragment slot="caption">Full benchmark grid across 20 DeepMind Control tasks, comparing DreamerV2, DreamerV3, Plan2Explore, and Mind Dreamer horizons.</Fragment>
+      </Figure>
+    </div>
+  </TabsContent>
+  <TabsContent value="ablation">
+    <div className="mx-auto max-w-[38rem]">
+      <Figure>
+        <Picture slot="figure" src={ablation} alt="Ablation study of Mind Dreamer components." />
+        <Fragment slot="caption">Focused ablation on representative tasks. Removing pragmatic or epistemic relay guidance weakens the generated curriculum.</Fragment>
+      </Figure>
+    </div>
+  </TabsContent>
+  <TabsContent value="convergence">
+    <div className="mx-auto max-w-[24rem]">
+      <Figure>
+        <Picture slot="figure" src={convergence} alt="Convergence comparison for relay value and relay uncertainty operators." />
+        <Fragment slot="caption">Convergence comparison for the relay potential operators used in the theoretical analysis.</Fragment>
+      </Figure>
+    </div>
+  </TabsContent>
+</Tabs>
+
+## Contributions
+
+1. **Active Causal Intervention.** We identify Historical Tethering as a core limitation of model-based RL and introduce generated latent anchors for non-continuous intervention.
+
+2. **Relay Potential Fields.** We derive RVF and RUF to assign value across spatial ruptures, including the $\gamma^2$ epistemic horizon for stable uncertainty propagation.
+
+3. **Theoretical speedup.** We show that MD acts as a variance-minimizing importance sampler that expands the manifold's spectral gap and reduces hitting time to bottleneck states.
+
+4. **Empirical validation.** On DeepMind Control Suite, MD improves both sample efficiency and asymptotic performance over DreamerV3.
+
+## BibTeX
+
+```bibtex
+@inproceedings{xu2026minddreamer,
+  title     = {Mind Dreamer: Untethering Imagination via Active Causal Intervention on Latent Manifolds},
+  author    = {Xu, Shaojun and Zhou, Xiaoling and Lin, Yihan and Meng, Yapeng and Ji, Xinglong and Shi, Luping and Zhao, Rong},
+  booktitle = {Proceedings of the 43rd International Conference on Machine Learning},
+  series    = {Proceedings of Machine Learning Research},
+  volume    = {306},
+  address   = {Seoul, South Korea},
+  year      = {2026}
+}
+```
