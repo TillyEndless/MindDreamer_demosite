@@ -30,6 +30,7 @@ interface Props {
 const { title, authors, conference, notes, links } = Astro.props;
 
 const hasBackground = Astro.slots.has("background");
+const compactAuthors = authors.every((author) => !author.institution);
 ---
 
 <header
@@ -58,25 +59,18 @@ const hasBackground = Astro.slots.has("background");
     <h1 class="my-0 text-3xl leading-tight font-medium md:text-5xl">
       {Array.isArray(title) ? title.map((line) => <span class="block md:whitespace-nowrap">{line}</span>) : title}
     </h1>
-    <div class="grid w-full max-w-[50rem] grid-cols-1 justify-items-center gap-x-4 gap-y-3 sm:grid-cols-2 md:grid-cols-12 md:gap-y-4">
-      {
-        authors.map((author, index) => (
-          <div
-            class:list={[
-              "flex flex-col items-center text-center sm:w-full",
-              authors.length === 7 &&
-                (index < 4 ? "md:col-span-3" : "md:col-span-4"),
-              authors.length !== 7 && "md:col-span-3",
-            ]}
-          >
-            <div class="flex flex-row text-base md:text-xl">
+    {
+      compactAuthors ? (
+        <div class="flex w-full max-w-[64rem] flex-row flex-wrap justify-center gap-x-5 gap-y-2">
+          {authors.map((author) => (
+            <div class="text-base md:text-xl">
               {author.url ? (
                 <a class:list={[hasBackground && "not-prose text-blue-200 hover:text-blue-100 underline decoration-dashed underline-offset-4 hover:decoration-solid"]} href={author.url}>{author.name}</a>
               ) : (
                 author.name
               )}
               {author.notes && (
-                <sup class="text-xl">
+                <sup class="ml-1 align-super text-xs md:text-sm">
                   {author.notes.map(
                     (note, index, array) =>
                       note + (index < array.length - 1 ? "," : ""),
@@ -84,26 +78,57 @@ const hasBackground = Astro.slots.has("background");
                 </sup>
               )}
             </div>
-            {author.institution && <div class="text-sm md:text-base">{author.institution}</div>}
-          </div>
-        ))
-      }
-    </div>
-    {conference && <div>{conference}</div>}
+          ))}
+        </div>
+      ) : (
+        <div class="grid w-full max-w-[50rem] grid-cols-1 justify-items-center gap-x-4 gap-y-3 sm:grid-cols-2 md:grid-cols-12 md:gap-y-4">
+          {
+            authors.map((author, index) => (
+              <div
+                class:list={[
+                  "flex flex-col items-center text-center sm:w-full",
+                  authors.length === 7 &&
+                    (index < 4 ? "md:col-span-3" : "md:col-span-4"),
+                  authors.length !== 7 && "md:col-span-3",
+                ]}
+              >
+                <div class="flex flex-row text-base md:text-xl">
+                  {author.url ? (
+                    <a class:list={[hasBackground && "not-prose text-blue-200 hover:text-blue-100 underline decoration-dashed underline-offset-4 hover:decoration-solid"]} href={author.url}>{author.name}</a>
+                  ) : (
+                    author.name
+                  )}
+                  {author.notes && (
+                    <sup class="text-xl">
+                      {author.notes.map(
+                        (note, index, array) =>
+                          note + (index < array.length - 1 ? "," : ""),
+                      )}
+                    </sup>
+                  )}
+                </div>
+                {author.institution && <div class="text-sm md:text-base">{author.institution}</div>}
+              </div>
+            ))
+          }
+        </div>
+      )
+    }
     {
       notes && (
-        <div class="text-center text-sm">
+        <div class="max-w-[58rem] text-center text-sm leading-6">
           {
             // prettier-ignore
-            notes.map((note, index, array) => (
-              <span>
-                <sup>{note.symbol}</sup>{note.text}{index < array.length - 1 ? "," : ""}
+            notes.map((note) => (
+              <span class="mx-2 inline-block">
+                <sup>{note.symbol}</sup>{note.text}
               </span>
             ))
           }
         </div>
       )
     }
+    {conference && <div>{conference}</div>}
     {
       links && (
         <div class="not-prose flex flex-row flex-wrap justify-center gap-2">
