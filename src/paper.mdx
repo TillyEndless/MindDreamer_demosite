@@ -163,7 +163,7 @@ Using the same benchmark family as prior Dreamer work, Mind Dreamer improves sam
     <div className="mx-auto max-w-[38rem]">
       <Figure>
         <Picture slot="figure" src={toyEnv} alt="A synthetic three-ring manifold used to demonstrate bottleneck discovery." />
-        <Fragment slot="caption">Toy three-ring manifold: Mind Dreamer reaches the first critical transition 4.2x faster by targeting high-uncertainty ring boundaries.</Fragment>
+        <Fragment slot="caption"><strong>Sampling dynamics on the synthetic three-ring manifold.</strong> Black points show DreamerV3 imagination starts, which remain coupled to historical occupancy and struggle to escape the ring attractor. Yellow crosses show Mind Dreamer counterfactual states, which rapidly aggregate near topological junctions between rings, helping bridge manifold bottlenecks and reach the first critical transition 4.2x faster.</Fragment>
       </Figure>
     </div>
   </TabsContent>
