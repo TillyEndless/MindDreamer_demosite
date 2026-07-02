@@ -167,7 +167,7 @@ Using the same benchmark family as prior Dreamer work, Mind Dreamer improves sam
   <TabsList>
     <TabsTrigger value="full">Task scores</TabsTrigger>
     <TabsTrigger value="ablation">Ablation</TabsTrigger>
-    <TabsTrigger value="convergence">Analysis</TabsTrigger>
+    <TabsTrigger value="convergence">Convergence</TabsTrigger>
   </TabsList>
   <TabsContent value="full">
     <div className="mx-auto max-w-[46rem]">
@@ -189,7 +189,7 @@ Using the same benchmark family as prior Dreamer work, Mind Dreamer improves sam
     <div className="mx-auto max-w-[24rem]">
       <Figure>
         <Picture slot="figure" src={convergence} alt="Convergence comparison for relay value and relay uncertainty operators." />
-        <Fragment slot="caption">Additional analysis of the relay guidance operators used to score generated anchors.</Fragment>
+        <Fragment slot="caption">Theoretical convergence comparison between standard temporal-difference learning and Mind Dreamer's relay-guided updates.</Fragment>
       </Figure>
     </div>
   </TabsContent>
