@@ -48,38 +48,45 @@ import convergence from "./assets/mind-dreamer/convergence_comparison.png";
 >
 </Header>
 
+<div className="not-prose mx-auto mb-10 flex flex-wrap justify-center gap-2 text-sm">
+  <a href="#motivation" className="rounded-full border border-zinc-200 px-4 py-2 text-zinc-700 hover:bg-zinc-100 hover:no-underline">Motivation</a>
+  <a href="#how-it-works" className="rounded-full border border-zinc-200 px-4 py-2 text-zinc-700 hover:bg-zinc-100 hover:no-underline">How it works</a>
+  <a href="#benchmarks" className="rounded-full border border-zinc-200 px-4 py-2 text-zinc-700 hover:bg-zinc-100 hover:no-underline">Benchmarks</a>
+  <a href="#conclusions" className="rounded-full border border-zinc-200 px-4 py-2 text-zinc-700 hover:bg-zinc-100 hover:no-underline">Conclusions</a>
+</div>
+
 <HighlightedSection>
 
-## Overview
+## Abstract
 
-Model-based reinforcement learning agents learn a world model and then practice inside it. This works well when useful experiences are already in the replay buffer, but it becomes slow when rewards sit behind rare bottlenecks.
+Model-based reinforcement learning agents learn a world model and improve their behavior by imagining future trajectories. But in most agents, imagination still begins from states in the replay buffer. This makes learning efficient once useful experience exists, yet slow when rewards are hidden behind rare bottlenecks.
 
-**Mind Dreamer** asks a simple question: if the world model already understands the shape of the environment, why should imagination always begin from places the agent has physically visited?
+**Mind Dreamer** untethers imagination from replay. It generates plausible latent anchors near promising frontiers, then starts imagined rollouts from those anchors so the policy can practice around bottlenecks before random exploration reaches them.
 
-Instead of only replaying history, Mind Dreamer generates plausible latent starting points near promising frontiers. These generated anchors let the agent practice around bottlenecks before random exploration happens to find them.
+Across DeepMind Control tasks, this simple shift makes learning faster on average and especially helpful in sparse-reward settings, where standard imagination remains trapped near familiar trajectories.
 
 </HighlightedSection>
 
-<div className="not-prose mx-auto my-10 grid max-w-[68rem] grid-cols-1 gap-4 px-0 sm:grid-cols-3">
+<div className="not-prose mx-auto my-10 grid max-w-[60rem] grid-cols-1 gap-4 px-0 sm:grid-cols-3">
   <div className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm">
     <div className="text-3xl font-semibold text-zinc-950">1.67x</div>
-    <div className="mt-2 text-sm text-zinc-600">average speedup to 90% peak performance over DreamerV3</div>
+    <div className="mt-2 text-sm text-zinc-600">average speedup to 90% peak performance</div>
   </div>
   <div className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm">
     <div className="text-3xl font-semibold text-zinc-950">8.8x</div>
-    <div className="mt-2 text-sm text-zinc-600">acceleration in challenging sparse-reward bottleneck tasks</div>
+    <div className="mt-2 text-sm text-zinc-600">acceleration on the hardest sparse-reward task</div>
   </div>
   <div className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm">
-    <div className="text-3xl font-semibold text-zinc-950">43.5x</div>
-    <div className="mt-2 text-sm text-zinc-600">reduction in jump consistency error with manifold constraints</div>
+    <div className="text-3xl font-semibold text-zinc-950">20</div>
+    <div className="mt-2 text-sm text-zinc-600">DeepMind Control tasks evaluated</div>
   </div>
 </div>
 
-## The Problem
+## Motivation
 
-Latent imagination gives model-based agents a powerful internal simulator, but the simulator is usually tethered to the replay buffer. Rollouts begin from states the policy has already visited, so the agent can keep practicing the familiar parts of the world while missing the transition that actually matters.
+World models are attractive because they let agents learn from imagined experience instead of expensive environment interaction. However, standard imagination is still historically tethered: rollouts usually start from states the agent has already visited.
 
-Mind Dreamer calls this **Historical Tethering**. The world model may already know enough local geometry to suggest where a bridge, doorway, or maneuver could exist, but the policy still waits for on-policy data to arrive there.
+This creates a mismatch. The world model can learn useful local structure from dense prediction losses, while the policy may still wait for sparse rewards to arrive through slow trajectory-bound exploration. In tasks with narrow gateways or delayed reward, the agent repeatedly improves what it already knows instead of practicing near the missing transition.
 
 <div className="mx-auto max-w-[30rem]">
   <Figure>
@@ -88,23 +95,25 @@ Mind Dreamer calls this **Historical Tethering**. The world model may already kn
   </Figure>
 </div>
 
-## Mind Dreamer
+The question behind Mind Dreamer is therefore deliberately practical: **can a learned world model suggest useful places to start imagination, without letting the agent exploit unrealistic hallucinations?**
 
-Mind Dreamer turns the world model from a passive replay machine into an active curriculum generator.
+## How It Works
 
-<div className="not-prose mx-auto my-8 grid max-w-[54rem] grid-cols-1 gap-4 md:grid-cols-3">
+Mind Dreamer turns the world model from a passive replay machine into an active curriculum generator. It does not ask the model to invent arbitrary futures. Instead, it searches for short, plausible latent jumps that expand where the policy can practice.
+
+<div className="not-prose mx-auto my-8 grid max-w-[58rem] grid-cols-1 gap-4 md:grid-cols-3">
   <div className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm">
-    <div className="text-sm font-semibold uppercase tracking-wide text-zinc-500">Step 1</div>
+    <div className="text-sm font-semibold uppercase text-zinc-500">Step 1</div>
     <div className="mt-2 text-xl font-semibold text-zinc-950">Propose anchors</div>
     <p className="mt-2 text-sm leading-6 text-zinc-600">Generate latent states near unexplored but plausible regions of the learned manifold.</p>
   </div>
   <div className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm">
-    <div className="text-sm font-semibold uppercase tracking-wide text-zinc-500">Step 2</div>
+    <div className="text-sm font-semibold uppercase text-zinc-500">Step 2</div>
     <div className="mt-2 text-xl font-semibold text-zinc-950">Score usefulness</div>
     <p className="mt-2 text-sm leading-6 text-zinc-600">Prefer anchors that are likely to reveal reward, reduce uncertainty, or connect separated regions.</p>
   </div>
   <div className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm">
-    <div className="text-sm font-semibold uppercase tracking-wide text-zinc-500">Step 3</div>
+    <div className="text-sm font-semibold uppercase text-zinc-500">Step 3</div>
     <div className="mt-2 text-xl font-semibold text-zinc-950">Practice there</div>
     <p className="mt-2 text-sm leading-6 text-zinc-600">Start imagined rollouts from selected anchors, letting the policy rehearse useful behavior earlier.</p>
   </div>
@@ -117,9 +126,9 @@ Mind Dreamer turns the world model from a passive replay machine into an active 
   </Figure>
 </div>
 
-The key design is restraint: Mind Dreamer does not ask the model to hallucinate arbitrary futures. It searches for short, plausible jumps that make the agent's imagination less local without abandoning the environment's learned structure.
+Relay guidance is the safety valve. It encourages anchors that are valuable and informative, while manifold constraints discourage jumps that look useful only because the model is leaving the environment's learned structure.
 
-## A Toy Manifold Case Study
+## Toy Case Study
 
 <TwoColumns>
   <div slot="left" className="mx-auto max-w-[28rem]">
@@ -132,12 +141,12 @@ The key design is restraint: Mind Dreamer does not ask the model to hallucinate 
 
 In the synthetic three-ring environment, random exploration rarely finds the narrow gateways between rings. DreamerV3 therefore spends many updates improving behavior near the starting region. Mind Dreamer instead places imagined practice near candidate gateways, turning a long discovery problem into a more local refinement problem.
 
-**Observed effect:** Mind Dreamer reaches the first critical transition **4.2x faster** by targeting high-uncertainty ring boundaries.
+**Observed effect:** Mind Dreamer reaches the first critical transition **4.2x faster** by targeting high-uncertainty ring boundaries. This toy example mirrors the core intuition of the full method: use the world model to decide where imagination should begin, not only how it should unfold.
 
   </div>
 </TwoColumns>
 
-## Experiments
+## Benchmarks
 
 <div className="mx-auto max-w-[45rem]">
   <Figure>
@@ -146,13 +155,13 @@ In the synthetic three-ring environment, random exploration rarely finds the nar
   </Figure>
 </div>
 
-Across DeepMind Control tasks, Mind Dreamer learns faster than DreamerV3 on average. It reaches 90% of peak performance in **334.7k steps**, compared with **557.6k steps** for DreamerV3. The largest gains appear in bottleneck-heavy tasks such as Pendulum Swingup, Hopper Hop, and Quadruped Run.
+Using the same benchmark family as prior Dreamer work, Mind Dreamer improves sample efficiency across DeepMind Control tasks. It reaches 90% of peak performance in **334.7k steps**, compared with **557.6k steps** for DreamerV3. The largest gains appear in bottleneck-heavy tasks such as Pendulum Swingup, Hopper Hop, and Quadruped Run.
 
 <Tabs defaultValue="full">
   <TabsList>
-    <TabsTrigger value="full">Full results</TabsTrigger>
+    <TabsTrigger value="full">Task scores</TabsTrigger>
     <TabsTrigger value="ablation">Ablation</TabsTrigger>
-    <TabsTrigger value="convergence">Convergence</TabsTrigger>
+    <TabsTrigger value="convergence">Analysis</TabsTrigger>
   </TabsList>
   <TabsContent value="full">
     <div className="mx-auto max-w-[46rem]">
@@ -174,21 +183,19 @@ Across DeepMind Control tasks, Mind Dreamer learns faster than DreamerV3 on aver
     <div className="mx-auto max-w-[24rem]">
       <Figure>
         <Picture slot="figure" src={convergence} alt="Convergence comparison for relay value and relay uncertainty operators." />
-        <Fragment slot="caption">Convergence comparison for the relay potential operators used in the theoretical analysis.</Fragment>
+        <Fragment slot="caption">Additional analysis of the relay guidance operators used to score generated anchors.</Fragment>
       </Figure>
     </div>
   </TabsContent>
 </Tabs>
 
-## Takeaways
+## Conclusions
 
-1. **Imagination should not be limited to replay.** A learned world model can suggest plausible places to practice before the policy reaches them through exploration.
+Mind Dreamer shows that a world model can be more than a simulator of futures from the replay buffer. It can also propose where imagination should begin.
 
-2. **Generated anchors act like a curriculum.** They focus imagined rollouts on regions that are useful, uncertain, and close enough to the learned manifold.
+The central takeaway is that **better starting points for imagination can improve exploration**. Generated anchors act like a curriculum, focusing rollouts on regions that are useful, uncertain, and close enough to the learned manifold to remain trustworthy.
 
-3. **The gains are strongest when discovery is hard.** Sparse rewards and narrow transition regions are where historical tethering hurts most.
-
-4. **The technical details are in the paper.** This page highlights the intuition; the full derivation and ablations are available in the paper and archive links above.
+The approach is most helpful when discovery is hard: sparse rewards, narrow transitions, and disconnected regions where replay-tethered imagination keeps practicing what the agent already knows. The technical details, derivations, and full ablations are available in the paper and archive links above.
 
 ## BibTeX
 
