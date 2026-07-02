@@ -10,7 +10,6 @@ import Header from "./components/Header.astro";
 import HighlightedSection from "./components/HighlightedSection.astro";
 import Figure from "./components/Figure.astro";
 import Picture from "./components/Picture.astro";
-import TwoColumns from "./components/TwoColumns.astro";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/starwind/tabs";
 
 import fig1 from "./assets/mind-dreamer/fig1-5.png";
@@ -134,24 +133,6 @@ Mind Dreamer keeps Dreamer's imagined rollouts, but changes how some rollout sta
 
 In short, Mind Dreamer asks the world model not only to predict futures, but also to identify where learning should start. The agent can then jump to globally worthwhile state regions and train there, rather than waiting for local exploration to discover them.
 
-## Toy Case Study
-
-<TwoColumns>
-  <div slot="left" className="mx-auto max-w-[28rem]">
-    <Figure>
-      <Picture slot="figure" src={toyEnv} alt="A synthetic three-ring manifold used to demonstrate bottleneck discovery." />
-      <Fragment slot="caption">Three-ring manifold. Transitioning across rings requires discovering narrow gateways that are unlikely under random walks.</Fragment>
-    </Figure>
-  </div>
-  <div slot="right">
-
-In the synthetic three-ring environment, random exploration rarely finds the narrow gateways between rings. DreamerV3 therefore spends many updates improving behavior near the starting region. Mind Dreamer instead places imagined practice near candidate gateways, turning a long discovery problem into a more local refinement problem.
-
-**Observed effect:** Mind Dreamer reaches the first critical transition **4.2x faster** by targeting high-uncertainty ring boundaries. This toy example mirrors the core intuition of the full method: use the world model to decide where imagination should begin, not only how it should unfold.
-
-  </div>
-</TwoColumns>
-
 ## Benchmarks
 
 <div className="mx-auto max-w-[45rem]">
@@ -166,6 +147,7 @@ Using the same benchmark family as prior Dreamer work, Mind Dreamer improves sam
 <Tabs defaultValue="full">
   <TabsList>
     <TabsTrigger value="full">Task scores</TabsTrigger>
+    <TabsTrigger value="toy">Toy example</TabsTrigger>
     <TabsTrigger value="ablation">Ablation</TabsTrigger>
     <TabsTrigger value="convergence">Convergence</TabsTrigger>
   </TabsList>
@@ -174,6 +156,14 @@ Using the same benchmark family as prior Dreamer work, Mind Dreamer improves sam
       <Figure>
         <Picture slot="figure" src={benchmarkGrid} alt="Full comparative evaluation across 20 DeepMind Control benchmarks." />
         <Fragment slot="caption">Full benchmark grid across 20 DeepMind Control tasks, comparing DreamerV2, DreamerV3, Plan2Explore, and Mind Dreamer horizons.</Fragment>
+      </Figure>
+    </div>
+  </TabsContent>
+  <TabsContent value="toy">
+    <div className="mx-auto max-w-[38rem]">
+      <Figure>
+        <Picture slot="figure" src={toyEnv} alt="A synthetic three-ring manifold used to demonstrate bottleneck discovery." />
+        <Fragment slot="caption">Toy three-ring manifold: Mind Dreamer reaches the first critical transition 4.2x faster by targeting high-uncertainty ring boundaries.</Fragment>
       </Figure>
     </div>
   </TabsContent>
